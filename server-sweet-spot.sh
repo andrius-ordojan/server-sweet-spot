@@ -78,35 +78,44 @@ get_choose_input() {
   echo "$input"
 }
 
-echo "install optional packages yes or no? (leave empty for no):"
-read install_optional
-if [ "$install_optional" != "yes" ]; then
-  install_optional="no"
-fi
-
-echo "[ APT ]"
-echo "=> installing essential packages"
-run_command "sudo apt-get update"
-run_command "sudo apt-get upgrade -y"
-run_command "sudo apt-get install -y curl ufw fail2ban wget"
-
-if [ "$install_optional" = "yes" ]; then
-  echo "=> installing optional packages"
-  run_command "sudo apt-get install -y git fish fzf zip bat ncdu net-tools btop ripgrep fd-find rust-eza sd"
-fi
-echo
+# echo "[ APT ]"
+# echo "=> installing essential packages"
+# echo
+# run_command "sudo apt-get update"
+# run_command "sudo apt-get upgrade -y"
+# run_command "sudo apt-get install -y curl ufw fail2ban wget"
+#
+# echo
+# echo "=> install optional packages yes or no? (leave empty for no):"
+# read install_optional
+# echo
+# if [ "$install_optional" != "yes" ]; then
+#   install_optional="no"
+# fi
+#
+# if [ "$install_optional" = "yes" ]; then
+#   echo "=> installing optional packages"
+#   echo
+#
+#   run_command "sudo apt-get install -y git fish fzf zip bat ncdu net-tools btop ripgrep fd-find sd"
+#
+#   run_command "wget -c https://github.com/eza-community/eza/releases/latest/download/eza_x86_64-unknown-linux-gnu.tar.gz -O - | tar xz"
+#   run_command "sudo chown root:root eza"
+#   run_command "sudo mv eza /usr/local/bin/eza"
+# fi
+# echo
 
 echo "[ user ]"
-echo "creating admin user"
+echo "=> creating admin user"
 echo
 
 user=$(get_required_input "Enter the name:")
 
 if [ "$install_optional" = "yes" ]; then
-  echo "using fish shell"
+  echo "=> using fish shell"
   shell_path="/usr/bin/fish"
 else
-  echo "using bash"
+  echo "=> using bash"
   shell_path="/bin/bash"
 fi
 
@@ -114,7 +123,7 @@ run_command "sudo useradd -m -s ${shell_path} -G sudo ${user}"
 
 user_home="/home/${user}/"
 
-echo "configuring vim"
+echo "=> configuring vim"
 run_command "sudo -u ${user} wget https://raw.githubusercontent.com/andrius-ordojan/server-sweet-spot/refs/heads/main/vim/vimrc > ~/.vimrc"
 # TODO: check if i need to chmod
 # run_command "sudo chmod 644 ${user_home}/.vimrc"
