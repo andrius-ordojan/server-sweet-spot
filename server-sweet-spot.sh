@@ -46,7 +46,7 @@ get_required_input() {
   local input
 
   while true; do
-    echo "$prompt"
+    echo $prompt
     read input
 
     if [ -n "$input" ]; then
@@ -105,55 +105,83 @@ get_choose_input() {
 # fi
 # echo
 
-echo "[ user ]"
-echo "=> creating admin user"
-echo
+# echo "[ user ]"
+# echo "=> creating admin user"
+# echo
+#
+# while true; do
+#   echo "enter name of user:"
+#   read input
+#
+#   if [ -n "$input" ]; then
+#     echo
+#     user=$input
+#     break
+#   else
+#     echo "Input is not set. Please enter a value."
+#   fi
+# done
+#
+install_optional="yes"
+# if [ "$install_optional" = "yes" ]; then
+#   echo "=> using fish shell"
+#   shell_path="/usr/bin/fish"
+# else
+#   echo "=> using bash"
+#   shell_path="/bin/bash"
+# fi
+#
+# run_command "sudo useradd -m -s ${shell_path} -G sudo ${user}"
+# user_home="/home/${user}"
+#
+# echo "=> configuring vim"
+# echo
+#
+# run_command "sudo -u ${user} wget https://raw.githubusercontent.com/andrius-ordojan/server-sweet-spot/refs/heads/main/vim/vimrc -O ${user_home}/.vimrc"
+#
+# run_command "sudo -u ${user} mkdir -p ${user_home}/.vim/colors"
+# run_command "sudo -u ${user} wget https://raw.githubusercontent.com/andrius-ordojan/server-sweet-spot/refs/heads/main/vim/PaperColor.vim -O ${user_home}/.vim/colors/PaperColor.vim"
 
-user=$(get_required_input "Enter the name:")
-
+user=a5
+user_home=/home/a5
 if [ "$install_optional" = "yes" ]; then
-  echo "=> using fish shell"
-  shell_path="/usr/bin/fish"
-else
-  echo "=> using bash"
-  shell_path="/bin/bash"
-fi
+  echo "=> configuring fish"
+  echo
 
-run_command "sudo useradd -m -s ${shell_path} -G sudo ${user}"
+  # run_command "sudo -u ${user} mkdir -p ${user_home}/.config/fish/conf.d"
 
-user_home="/home/${user}/"
+  run_command "sudo -u ${user} bash <<EOF
+cat > ${user_home}/.config/fish/conf.d/alias.fish << 'INNEREOF'
+alias ls='ls -F'
+alias lsa='ls -aF'
+alias ll='ls -lh'
+alias lt='ls --human-readable --size -1 -S --classify'
+alias fd='fdfind'
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+alias v='v .'
+alias ports='sudo netstat -tulanp'
+INNEREOF
+EOF"
+  # run_command "sudo su - ${user} -c \" bash -c \'cat << EOF > ${user_home}/.config/fish/conf.d/alias.fish
+  #               alias ls='ls -F'
+  #               alias lsa='ls -aF'
+  #               alias ll='ls -lh'
+  #               alias lt='ls --human-readable --size -1 -S --classify'
+  #               alias ff=\"fzf --preview 'batcat --style=numbers --color=always {}'\"
+  #               alias fd='fdfind'
+  #
+  #               alias ..='cd ..'
+  #               alias ...='cd ../..'
+  #               alias ....='cd ../../..'
+  #
+  #               alias v='v .'
+  #
+  #               alias ports='sudo netstat -tulanp'
+  #             EOF\'\""
 
-echo "=> configuring vim"
-run_command "sudo -u ${user} wget https://raw.githubusercontent.com/andrius-ordojan/server-sweet-spot/refs/heads/main/vim/vimrc > ~/.vimrc"
-# TODO: check if i need to chmod
-# run_command "sudo chmod 644 ${user_home}/.vimrc"
-
-run_command "sudo -u ${user} mkdir -p ~/.vim/colors"
-# TODO: check if i need to chmod
-run_command "sudo -u ${user} wget https://raw.githubusercontent.com/andrius-ordojan/server-sweet-spot/refs/heads/main/vim/PaperColor.vim > ~/.vim/colors/"
-# TODO: check if i need to chmod
-
-if [ "$install_optional" = "yes" ]; then
-  echo "configuring fish"
-  run_command "sudo -u ${user} mkdir -p ~/.config/fish/conf.d"
-  run_command "sudo -u ${user} cat << EOF > ~/.config/fish/conf.d/alias.fish
-                alias ls='ls -F'
-                alias lsa='ls -aF'
-                alias ll='ls -lh'
-                alias lt='ls --human-readable --size -1 -S --classify'
-                alias ff=\"fzf --preview 'batcat --style=numbers --color=always {}'\"
-                alias fd='fdfind'
-
-                alias ..='cd ..'
-                alias ...='cd ../..'
-                alias ....='cd ../../..'
-
-                alias v='v .'
-
-                alias ports='sudo netstat -tulanp'
-              EOF"
-
-  run_command "sudo -u ${user} cat << EOF > ~/.config/fish/config.fish
+  run_command "sudo -u ${user} cat << EOF > ${uesr_home}/.config/fish/config.fish
                 function v
                     if test -n \"\$argv\"
                         vim .
