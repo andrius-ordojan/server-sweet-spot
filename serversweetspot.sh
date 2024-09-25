@@ -58,6 +58,7 @@ show_progress() {
 # TODO: make a cli for most of these
 username="root2"
 server_ip="20.79.165.75"
+# TODO: change to /tmp
 path_on_server="/home/root2"
 password="46AaCfGgKkMNnqsTtVvXxYy"
 
@@ -161,8 +162,8 @@ print_color "yellow" "Installing essential packages: ${essential_packages[*]}"
 show_progress $!
 print_color "green" "Essential packages installed."
 
-if prompt_yes_no "Do you want to install optional packages? [git, fish, fzf, zip, bat, ncdu, btop, ripgrep, fd-find, sd, eza]"; then
-  optional_packages=("git" "fish" "fzf" "zip" "bat" "ncdu" "btop" "ripgrep" "fd-find" "sd")
+if prompt_yes_no "Do you want to install optional packages? [git, fish, fzf, zip, bat, ncdu, btop, ripgrep, fd-find, sd, eza, tldr]"; then
+  optional_packages=("git" "fish" "fzf" "zip" "bat" "ncdu" "btop" "ripgrep" "fd-find" "sd" "tld")
 
   (apt install -y "${optional_packages[@]}" >/dev/null 2>&1) &
   show_progress $!
@@ -173,7 +174,6 @@ if prompt_yes_no "Do you want to install optional packages? [git, fish, fzf, zip
   if [ ! -L "/usr/local/bin/fd" ]; then
     ln -s /usr/bin/fdfind /usr/local/bin/fd
   fi
-
   print_color "green" "Optional packages installed."
 
   if [ ! -f "/usr/local/bin/eza" ]; then
