@@ -61,10 +61,11 @@ server_ip="20.79.165.75"
 # TODO: change to /tmp
 path_on_server="/home/root2"
 password="46AaCfGgKkMNnqsTtVvXxYy"
+host_pub_key=$(cat ~/.ssh/id_ed25519.pub)
 
 if [[ ! "$ON_SERVER" ]]; then
   sshpass -p "$password" scp "$0" "$username@$server_ip:$path_on_server"
-  sshpass -p "$password" ssh -t "$username@$server_ip" "sudo ON_SERVER=1 bash $path_on_server/$(basename $0)"
+  sshpass -p "$password" ssh -t "$username@$server_ip" "sudo ON_SERVER=1 HOST_PUB_KEY='$host_pub_key' bash $path_on_server/$(basename $0)"
   exit 0
 fi
 
@@ -85,13 +86,12 @@ echo
 display_ascii_art "$ascii_art"
 echo
 center_text "Inspired by Enki, created by Andrius"
+center_text "https://github.com/andrius-ordojan/server-sweet-spot"
 center_text "This script will walk you through some basic server setup and configuration."
 echo
-# TODO: color the details in yellow here
-center_text "The script is running on ### $(hostname) $(hostname -I) ###"
-echo
-print_color "green" "Starting server setup..."
-sleep 5
+print_color "green" "Starting server setup on $(hostname) $(hostname -I)..."
+# TODO: change 5 later
+sleep 1
 
 if [[ $EUID -ne 0 ]]; then
   print_color "red" "This script must be run as root"
@@ -103,18 +103,66 @@ fi
 #----------------------
 if prompt_yes_no "Do you want to set up a new non-root user?"; then
   read -r -p "Enter new username: " new_user
-  if [ "$install_optional" = "yes" ]; then
-    echo "=> using fish shell"
-    shell_path="/usr/bin/fish"
+
+  if command -v fish 2 >&1 >/dev/null; then
+    if prompt_yes_no "Fish shell is installed. Do you want to set it as default for the user ${new_user}"; then
+      using_fish=1
+      shell_path="/usr/bin/fish"
+      print_color "green" "Setting fish as default shell"
+    fi
   else
-    echo "=> using bash"
     shell_path="/bin/bash"
   fi
 
-  run_command "sudo useradd -m -s ${shell_path} -G sudo ${user}"
-  sudo adduser "$new_user"
-  sudo usermod -aG sudo "$new_user"
-  print_color "green" "User $new_user has been created and added to sudo group"
+  # sudo useradd -m -s ${shell_path} -G sudo ${new_user}
+  # print_color "green" "User $new_user has been created and added to sudo group"
+
+  # TODO: add vim configuration
+
+  if [ $using_fish ]; then
+    sudo -u ${new_user} mkdir -p /home/${new_user}/.config/fish/conf.d
+
+    sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/conf.d/alias.fish <<EOL
+alias ls='eza -lh --group-directories-first --icons'
+alias lsa='ls -a'
+alias lt='eza --tree --level=2 --long --icons --git'
+alias lta='lt -a'
+alias ff=\"fzf --preview 'batcat --style=numbers --color=always {}'\"
+alias fd='fdfind'
+
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+alias ports='sudo netstat -tulanp'
+EOL"
+
+    sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/config.fish <<EOL
+function v
+    if test -n "$argv"
+        vim .
+    else
+        vim $argv
+    end
+end
+EOL"
+
+    print_color "green" "added fish config"
+  fi
+
+  if prompt_yes_no "Add public key to authorized_keys for ${new_user}?"; then
+    read -r -p "Provide public key to add (by default it will try to use ~/.ssh/id_ed25519.pub):" input
+
+    if [ -z "$input" ]; then
+      key=$host_pub_key
+    else
+      key=$input
+    fi
+
+    sudo -u ${new_user} mkdir -p /home/${new_user}/.ssh
+    sudo -u ${new_user} bash -c "echo $HOST_PUB_KEY > /home/${new_user}/.ssh/authorized_keys"
+    sudo -u ${new_user} bash -c "chmod 600 /home/${new_user}/.ssh/authorized_keys"
+  fi
 fi
 exit 0
 #--------------------
@@ -163,6 +211,7 @@ show_progress $!
 print_color "green" "Essential packages installed."
 
 if prompt_yes_no "Do you want to install optional packages? [git, fish, fzf, zip, bat, ncdu, btop, ripgrep, fd-find, sd, eza, tldr]"; then
+  install_optional=1
   optional_packages=("git" "fish" "fzf" "zip" "bat" "ncdu" "btop" "ripgrep" "fd-find" "sd" "tld")
 
   (apt install -y "${optional_packages[@]}" >/dev/null 2>&1) &
@@ -188,7 +237,27 @@ fi
 #----------------------
 if prompt_yes_no "Do you want to set up a new non-root user?"; then
   read -r -p "Enter new username: " new_user
-  sudo adduser "$new_user"
-  sudo usermod -aG sudo "$new_user"
-  print_color "green" "User $new_user has been created and added to sudo group"
+
+  if command -v fish 2 >&1 >/dev/null; then
+    if prompt_yes_no "Fish shell is installed. Do you want to set it as default for the user ${new_user}"; then
+      using_fish=1
+      shell_path="/usr/bin/fish"
+      print_color "green" "Setting fish as default shell"
+    fi
+  else
+    shell_path="/bin/bash"
+  fi
+
+  # sudo useradd -m -s ${shell_path} -G sudo ${new_user}
+  # print_color "green" "User $new_user has been created and added to sudo group"
+
+  # TODO: add vim configuration
+
+  if [ $using_fish ]; then
+    echo configuring fish
+  fi
+
+  # TODO: add fish defaults
+  #
+  # TODO: add ~/.ssh/id_ed25519.pub to new user known hosts
 fi
