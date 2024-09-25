@@ -232,7 +232,31 @@ sudo -u ${new_user} wget -q https://raw.githubusercontent.com/amix/vimrc/refs/he
 print_color "green" "Configured vim"
 
 #---------------
-# SSH hardening
+# Configure unattended upgrades
+#---------------
+print_color "yellow" "Configuring unattended-upgrades..."
+sudo tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null <<-EOF
+APT::Periodic::Update-Package-Lists "1"
+APT::Periodic::Unattended-Upgrade "1"
+APT::Periodic::AutocleanInterval "7"
+EOF
+
+sudo tee /etc/apt/apt.conf.d/52unattended-upgrades-local >/dev/null <<-EOF
+"Unattended-Upgrade::Origins-Pattern {"
+  "origin=Debian,codename=\${distro_codename},label=Debian";
+  "origin=Debian,codename=\${distro_codename},label=Debian-Security";
+  "origin=Debian,codename=\${distro_codename}-security,label=Debian-Security";
+  "origin=Debian,codename=\${distro_codename},label=Debian-Updates";
+};
+
+Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
+Unattended-Upgrade::Remove-Unused-Dependencies "true";
+EOF
+
+print_color "green" "Done"
+
+#---------------
+# Configure SSH
 #---------------
 print_color "yellow" "Configuring SSH..."
 
@@ -262,3 +286,5 @@ print_color "yellow" "Port: 2954"
 print_color "yellow" "Root login disabled"
 print_color "yellow" "Password authentication disabled"
 print_color "yellow" "Only user $new_user is allowed to login"
+
+sudo systemctl restart ssh
