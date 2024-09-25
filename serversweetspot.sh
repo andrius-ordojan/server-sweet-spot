@@ -98,73 +98,6 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
-#----------------------
-# Set up non-root user
-#----------------------
-if prompt_yes_no "Do you want to set up a new non-root user?"; then
-  read -r -p "Enter new username: " new_user
-
-  if command -v fish 2 >&1 >/dev/null; then
-    if prompt_yes_no "Fish shell is installed. Do you want to set it as default for the user ${new_user}"; then
-      using_fish=1
-      shell_path="/usr/bin/fish"
-      print_color "green" "Setting fish as default shell"
-    fi
-  else
-    shell_path="/bin/bash"
-  fi
-
-  # sudo useradd -m -s ${shell_path} -G sudo ${new_user}
-  # print_color "green" "User $new_user has been created and added to sudo group"
-
-  # TODO: add vim configuration
-
-  if [ $using_fish ]; then
-    sudo -u ${new_user} mkdir -p /home/${new_user}/.config/fish/conf.d
-
-    sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/conf.d/alias.fish <<EOL
-alias ls='eza -lh --group-directories-first --icons'
-alias lsa='ls -a'
-alias lt='eza --tree --level=2 --long --icons --git'
-alias lta='lt -a'
-alias ff=\"fzf --preview 'batcat --style=numbers --color=always {}'\"
-alias fd='fdfind'
-
-alias ..='cd ..'
-alias ...='cd ../..'
-alias ....='cd ../../..'
-
-alias ports='sudo netstat -tulanp'
-EOL"
-
-    sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/config.fish <<EOL
-function v
-    if test -n "$argv"
-        vim .
-    else
-        vim $argv
-    end
-end
-EOL"
-
-    print_color "green" "added fish config"
-  fi
-
-  if prompt_yes_no "Add public key to authorized_keys for ${new_user}?"; then
-    read -r -p "Provide public key to add (by default it will try to use ~/.ssh/id_ed25519.pub):" input
-
-    if [ -z "$input" ]; then
-      key=$host_pub_key
-    else
-      key=$input
-    fi
-
-    sudo -u ${new_user} mkdir -p /home/${new_user}/.ssh
-    sudo -u ${new_user} bash -c "echo $HOST_PUB_KEY > /home/${new_user}/.ssh/authorized_keys"
-    sudo -u ${new_user} bash -c "chmod 600 /home/${new_user}/.ssh/authorized_keys"
-  fi
-fi
-exit 0
 #--------------------
 # Update and upgrade
 #--------------------
@@ -201,7 +134,7 @@ else
 fi
 
 #---------------------
-# Installs Tools
+# Installs Packages
 #---------------------
 essential_packages=("ufw" "fail2ban" "net-tools" "wget" "curl")
 
@@ -248,16 +181,54 @@ if prompt_yes_no "Do you want to set up a new non-root user?"; then
     shell_path="/bin/bash"
   fi
 
-  # sudo useradd -m -s ${shell_path} -G sudo ${new_user}
-  # print_color "green" "User $new_user has been created and added to sudo group"
-
-  # TODO: add vim configuration
+  sudo useradd -m -s ${shell_path} -G sudo ${new_user}
+  print_color "green" "User $new_user has been created and added to sudo group"
 
   if [ $using_fish ]; then
-    echo configuring fish
+    sudo -u ${new_user} mkdir -p /home/${new_user}/.config/fish/conf.d
+
+    sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/conf.d/alias.fish <<EOL
+alias ls='eza -lh --group-directories-first --icons'
+alias lsa='ls -a'
+alias lt='eza --tree --level=2 --long --icons --git'
+alias lta='lt -a'
+alias ff=\"fzf --preview 'batcat --style=numbers --color=always {}'\"
+alias fd='fdfind'
+
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+alias ports='sudo netstat -tulanp'
+EOL"
+
+    sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/config.fish <<EOL
+function v
+    if test -n "$argv"
+        vim .
+    else
+        vim $argv
+    end
+end
+EOL"
+
+    print_color "green" "Configured fish"
   fi
 
-  # TODO: add fish defaults
-  #
-  # TODO: add ~/.ssh/id_ed25519.pub to new user known hosts
+  if prompt_yes_no "Add public key to authorized_keys for ${new_user}?"; then
+    read -r -p "Provide public key to add (by default it will try to use ~/.ssh/id_ed25519.pub):" input
+
+    if [ -z "$input" ]; then
+      key=$host_pub_key
+    else
+      key=$input
+    fi
+
+    sudo -u ${new_user} mkdir -p /home/${new_user}/.ssh
+    sudo -u ${new_user} bash -c "echo $HOST_PUB_KEY > /home/${new_user}/.ssh/authorized_keys"
+    sudo -u ${new_user} bash -c "chmod 600 /home/${new_user}/.ssh/authorized_keys"
+  fi
+
+  sudo -u ${new_user} wget -q https://raw.githubusercontent.com/amix/vimrc/refs/heads/master/vimrcs/basic.vim -O /home/${new_user}/.vimrc
+  print_color "green" "Configured vim"
 fi
