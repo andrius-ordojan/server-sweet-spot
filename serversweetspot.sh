@@ -234,13 +234,11 @@ print_color "green" "Configured vim"
 #---------------
 # SSH hardening
 #---------------
-ssh_hardened=false
-new_ssh_port=""
 print_color "yellow" "Configuring SSH..."
 
 mkdir -p /etc/ssh/sshd_config.d/_archive
 mv /etc/ssh/sshd_config.d/* /etc/ssh/sshd_config.d/_archive >/dev/null 2>&1
-print_color "green" "Archived existing ssh configuration in /etc/ssh/ssh_config.d/"
+print_color "green" "Archived existing ssh configuration located in /etc/ssh/ssh_config.d/ to /etc/ssh/ssh_config.d/_archive"
 
 custom_conf="/etc/ssh/sshd_config.d/50-custom.conf"
 sudo tee -a ${custom_conf} >/dev/null <<-EOF
