@@ -168,26 +168,25 @@ fi
 #----------------------
 # Set up non-root user
 #----------------------
-if prompt_yes_no "Do you want to set up a new non-root user?"; then
-  read -r -p "Enter new username: " new_user
+read -r -p "Enter username of the new non-root user: " new_user
 
-  if command -v fish 2 >&1 >/dev/null; then
-    if prompt_yes_no "Fish shell is installed. Do you want to set it as default for the user ${new_user}"; then
-      using_fish=1
-      shell_path="/usr/bin/fish"
-      print_color "green" "Setting fish as default shell"
-    fi
-  else
-    shell_path="/bin/bash"
+if command -v fish 2 >&1 >/dev/null; then
+  if prompt_yes_no "Fish shell is installed. Do you want to set it as default for the user ${new_user}"; then
+    using_fish=1
+    shell_path="/usr/bin/fish"
+    print_color "green" "Setting fish as default shell"
   fi
+else
+  shell_path="/bin/bash"
+fi
 
-  sudo useradd -m -s ${shell_path} -G sudo ${new_user}
-  print_color "green" "User $new_user has been created and added to sudo group"
+sudo useradd -m -s ${shell_path} -G sudo ${new_user}
+print_color "green" "User $new_user has been created and added to sudo group"
 
-  if [ $using_fish ]; then
-    sudo -u ${new_user} mkdir -p /home/${new_user}/.config/fish/conf.d
+if [ $using_fish ]; then
+  sudo -u ${new_user} mkdir -p /home/${new_user}/.config/fish/conf.d
 
-    sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/conf.d/alias.fish <<EOL
+  sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/conf.d/alias.fish <<EOL
 alias ls='eza -lh --group-directories-first --icons'
 alias lsa='ls -a'
 alias lt='eza --tree --level=2 --long --icons --git'
@@ -202,7 +201,7 @@ alias ....='cd ../../..'
 alias ports='sudo netstat -tulanp'
 EOL"
 
-    sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/config.fish <<EOL
+  sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/config.fish <<EOL
 function v
     if test -n "$argv"
         vim .
@@ -212,23 +211,56 @@ function v
 end
 EOL"
 
-    print_color "green" "Configured fish"
-  fi
-
-  if prompt_yes_no "Add public key to authorized_keys for ${new_user}?"; then
-    read -r -p "Provide public key to add (by default it will try to use ~/.ssh/id_ed25519.pub):" input
-
-    if [ -z "$input" ]; then
-      key=$host_pub_key
-    else
-      key=$input
-    fi
-
-    sudo -u ${new_user} mkdir -p /home/${new_user}/.ssh
-    sudo -u ${new_user} bash -c "echo $HOST_PUB_KEY > /home/${new_user}/.ssh/authorized_keys"
-    sudo -u ${new_user} bash -c "chmod 600 /home/${new_user}/.ssh/authorized_keys"
-  fi
-
-  sudo -u ${new_user} wget -q https://raw.githubusercontent.com/amix/vimrc/refs/heads/master/vimrcs/basic.vim -O /home/${new_user}/.vimrc
-  print_color "green" "Configured vim"
+  print_color "green" "Configured fish"
 fi
+
+if prompt_yes_no "Add public key to authorized_keys for ${new_user}?"; then
+  read -r -p "Provide public key to add (by default it will try to use ~/.ssh/id_ed25519.pub):" input
+
+  if [ -z "$input" ]; then
+    key=$host_pub_key
+  else
+    key=$input
+  fi
+
+  sudo -u ${new_user} mkdir -p /home/${new_user}/.ssh
+  sudo -u ${new_user} bash -c "echo $HOST_PUB_KEY > /home/${new_user}/.ssh/authorized_keys"
+  sudo -u ${new_user} bash -c "chmod 600 /home/${new_user}/.ssh/authorized_keys"
+fi
+
+sudo -u ${new_user} wget -q https://raw.githubusercontent.com/amix/vimrc/refs/heads/master/vimrcs/basic.vim -O /home/${new_user}/.vimrc
+print_color "green" "Configured vim"
+
+#---------------
+# SSH hardening
+#---------------
+ssh_hardened=false
+new_ssh_port=""
+print_color "yellow" "Configuring SSH..."
+
+mkdir -p /etc/ssh/sshd_config.d/_archive
+mv /etc/ssh/sshd_config.d/* /etc/ssh/sshd_config.d/_archive >/dev/null 2>&1
+print_color "green" "Archived existing ssh configuration in /etc/ssh/ssh_config.d/"
+
+custom_conf="/etc/ssh/sshd_config.d/50-custom.conf"
+sudo tee -a ${custom_conf} >/dev/null <<-EOF
+Port 2954
+PermitRootLogin no
+PasswordAuthentication no
+PubkeyAuthentication yes
+AuthorizedKeysFile .ssh/authorized_keys
+
+Protocol 2
+MaxAuthTries 3
+ClientAliveInterval 300
+ClientAliveCountMax 2
+EOF
+
+echo "AllowUsers $new_user" | sudo tee -a ${custom_conf} >/dev/null
+sudo chmod 600 ${custom_conf}
+
+print_color "yellow" "New SSH configuration:"
+print_color "yellow" "Port: 2954"
+print_color "yellow" "Root login disabled"
+print_color "yellow" "Password authentication disabled"
+print_color "yellow" "Only user $new_user is allowed to login"
