@@ -165,6 +165,9 @@ if prompt_yes_no "Do you want to install optional packages? [fish, fzf, zip, bat
   fi
 fi
 
+print_color "green" "Finshed installing packages"
+echo
+
 #----------------------
 # Set up non-root user
 #----------------------
@@ -251,15 +254,17 @@ fi
 
 sudo -u ${new_user} wget -q https://raw.githubusercontent.com/amix/vimrc/refs/heads/master/vimrcs/basic.vim -O /home/${new_user}/.vimrc
 print_color "green" "Configured vim"
+print_color "green" "User $new_user has been created and configured"
+echo
 
 #---------------
 # Configure unattended upgrades
 #---------------
 print_color "yellow" "Configuring unattended-upgrades..."
 sudo tee /etc/apt/apt.conf.d/20auto-upgrades >/dev/null <<-EOF
-APT::Periodic::Update-Package-Lists "1"
-APT::Periodic::Unattended-Upgrade "1"
-APT::Periodic::AutocleanInterval "7"
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Unattended-Upgrade "1";
+APT::Periodic::AutocleanInterval "7";
 EOF
 
 sudo tee /etc/apt/apt.conf.d/52unattended-upgrades-local >/dev/null <<-EOF
@@ -274,7 +279,40 @@ Unattended-Upgrade::Remove-New-Unused-Dependencies "true";
 Unattended-Upgrade::Remove-Unused-Dependencies "true";
 EOF
 
-print_color "green" "Done"
+print_color "green" "Finshed configuring unattended-upgrades. Check new settings in /etc/apt/apt.conf.d/"
+echo
+
+#---------------
+# Fail2Ban setup
+#---------------
+print_color "yellow" "Configuring Fail2Ban..."
+
+cat <<EOF >/etc/fail2ban/jail.local
+[DEFAULT]
+bantime  = 10m
+findtime  = 10m
+maxretry = 5
+
+# Avoid banning local network
+ignoreip = 127.0.0.1/8 ::1
+
+[sshd]
+enabled = true
+port    = 2954
+logpath = %(sshd_log)s
+backend = %(sshd_backend)s
+EOF
+
+systemctl restart fail2ban
+
+print_color "green" "Fail2Ban has been installed and configured"
+print_color "yellow" "Default Fail2Ban settings:"
+print_color "yellow" "- Ban time: 10 minutes"
+print_color "yellow" "- Find time: 10 minutes"
+print_color "yellow" "- Max retries: 5"
+print_color "yellow" "- Ignored IP: localhost"
+print_color "yellow" "You can adjust these settings in /etc/fail2ban/jail.local"
+echo
 
 #---------------
 # Configure SSH
@@ -309,37 +347,7 @@ print_color "yellow" "Port: 2954"
 print_color "yellow" "Root login disabled"
 print_color "yellow" "Password authentication disabled"
 print_color "yellow" "Only user $new_user is allowed to login"
-
-#---------------
-# Fail2Ban setup
-#---------------
-print_color "yellow" "Configuring Fail2Ban..."
-
-cat <<EOF >/etc/fail2ban/jail.local
-[DEFAULT]
-bantime  = 10m
-findtime  = 10m
-maxretry = 5
-
-# Avoid banning local network
-ignoreip = 127.0.0.1/8 ::1
-
-[sshd]
-enabled = true
-port    = 2954
-logpath = %(sshd_log)s
-backend = %(sshd_backend)s
-EOF
-
-systemctl restart fail2ban
-
-print_color "green" "Fail2Ban has been installed and configured"
-print_color "yellow" "Default Fail2Ban settings:"
-print_color "yellow" "- Ban time: 10 minutes"
-print_color "yellow" "- Find time: 10 minutes"
-print_color "yellow" "- Max retries: 5"
-print_color "yellow" "- Ignored IP: localhost"
-print_color "yellow" "You can adjust these settings in /etc/fail2ban/jail.local"
+echo
 
 #-------------
 # UFW setup
@@ -350,3 +358,6 @@ ufw default allow outgoing >/dev/null 2>&1
 ufw allow 2954/tcp comment 'SSH' >/dev/null 2>&1
 echo "y" | ufw enable >/dev/null 2>&1
 print_color "green" "UFW has been installed and configured"
+
+echo
+print_color "green" "Server setup complete!"
