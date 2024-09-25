@@ -97,6 +97,25 @@ if [[ $EUID -ne 0 ]]; then
   exit 1
 fi
 
+#----------------------
+# Set up non-root user
+#----------------------
+if prompt_yes_no "Do you want to set up a new non-root user?"; then
+  read -r -p "Enter new username: " new_user
+  if [ "$install_optional" = "yes" ]; then
+    echo "=> using fish shell"
+    shell_path="/usr/bin/fish"
+  else
+    echo "=> using bash"
+    shell_path="/bin/bash"
+  fi
+
+  run_command "sudo useradd -m -s ${shell_path} -G sudo ${user}"
+  sudo adduser "$new_user"
+  sudo usermod -aG sudo "$new_user"
+  print_color "green" "User $new_user has been created and added to sudo group"
+fi
+exit 0
 #--------------------
 # Update and upgrade
 #--------------------
@@ -167,3 +186,9 @@ fi
 #----------------------
 # Set up non-root user
 #----------------------
+if prompt_yes_no "Do you want to set up a new non-root user?"; then
+  read -r -p "Enter new username: " new_user
+  sudo adduser "$new_user"
+  sudo usermod -aG sudo "$new_user"
+  print_color "green" "User $new_user has been created and added to sudo group"
+fi
