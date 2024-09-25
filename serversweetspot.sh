@@ -302,10 +302,51 @@ EOF
 echo "AllowUsers $new_user" | sudo tee -a ${custom_conf} >/dev/null
 sudo chmod 600 ${custom_conf}
 
+sudo systemctl restart ssh
+
 print_color "yellow" "New SSH configuration:"
 print_color "yellow" "Port: 2954"
 print_color "yellow" "Root login disabled"
 print_color "yellow" "Password authentication disabled"
 print_color "yellow" "Only user $new_user is allowed to login"
 
-sudo systemctl restart ssh
+#---------------
+# Fail2Ban setup
+#---------------
+print_color "yellow" "Configuring Fail2Ban..."
+
+cat <<EOF >/etc/fail2ban/jail.local
+[DEFAULT]
+bantime  = 10m
+findtime  = 10m
+maxretry = 5
+
+# Avoid banning local network
+ignoreip = 127.0.0.1/8 ::1
+
+[sshd]
+enabled = true
+port    = 2954
+logpath = %(sshd_log)s
+backend = %(sshd_backend)s
+EOF
+
+systemctl restart fail2ban
+
+print_color "green" "Fail2Ban has been installed and configured"
+print_color "yellow" "Default Fail2Ban settings:"
+print_color "yellow" "- Ban time: 10 minutes"
+print_color "yellow" "- Find time: 10 minutes"
+print_color "yellow" "- Max retries: 5"
+print_color "yellow" "- Ignored IP: localhost"
+print_color "yellow" "You can adjust these settings in /etc/fail2ban/jail.local"
+
+#-------------
+# UFW setup
+#-------------
+print_color "yellow" "Configuring UFW..."
+ufw default deny incoming >/dev/null 2>&1
+ufw default allow outgoing >/dev/null 2>&1
+ufw allow 2954/tcp comment 'SSH' >/dev/null 2>&1
+echo "y" | ufw enable >/dev/null 2>&1
+print_color "green" "UFW has been installed and configured"
