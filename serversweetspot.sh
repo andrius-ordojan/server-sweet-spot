@@ -136,16 +136,16 @@ fi
 #---------------------
 # Installs Packages
 #---------------------
-essential_packages=("ufw" "fail2ban" "net-tools" "wget" "curl")
+essential_packages=("ufw" "git" "fail2ban" "net-tools" "wget" "curl")
 
 print_color "yellow" "Installing essential packages: ${essential_packages[*]}"
 (apt install -y "${essential_packages[@]}" >/dev/null 2>&1) &
 show_progress $!
 print_color "green" "Essential packages installed."
 
-if prompt_yes_no "Do you want to install optional packages? [git, fish, fzf, zip, bat, ncdu, btop, ripgrep, fd-find, sd, eza, tldr]"; then
+if prompt_yes_no "Do you want to install optional packages? [fish, fzf, zip, bat, ncdu, btop, ripgrep, fd-find, sd, eza, tldr]"; then
   install_optional=1
-  optional_packages=("git" "fish" "fzf" "zip" "bat" "ncdu" "btop" "ripgrep" "fd-find" "sd" "tld")
+  optional_packages=("fish" "fzf" "zip" "bat" "ncdu" "btop" "ripgrep" "fd-find" "sd" "tldr")
 
   (apt install -y "${optional_packages[@]}" >/dev/null 2>&1) &
   show_progress $!
@@ -212,6 +212,27 @@ end
 EOL"
 
   print_color "green" "Configured fish"
+else
+
+  sudo -u ${new_user} bash -c "cat >/home/${new_user}/.bashrc <<EOL
+alias ls='ls -F'
+alias lsa='ls -aF'
+alias ll='ls -lh'
+alias lt='ls --human-readable --size -1 -S --classify'
+
+alias ..='cd ..'
+alias ...='cd ../..'
+alias ....='cd ../../..'
+
+v() {
+    if [[ -n "$1" ]]; then
+        vim "$1"
+    else
+        vim .
+    fi
+}
+EOL"
+  print_color "green" "Configured .bashrc"
 fi
 
 if prompt_yes_no "Add public key to authorized_keys for ${new_user}?"; then
