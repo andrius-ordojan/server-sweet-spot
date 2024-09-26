@@ -1,4 +1,4 @@
-# Server Configuration Script
+# server-sweet-spot
 
 ## Purpose
 
