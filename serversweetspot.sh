@@ -87,6 +87,11 @@ if [[ -z "$server_ip" || -z "$password" ]]; then
 fi
 
 if [[ ! "$ON_SERVER" ]]; then
+  if ! command -v sshpass &>/dev/null; then
+    echo "sshpass is not installed. It is a required dependency to automate password authentication over ssh. Install it and rerun the script."
+    exit 1
+  fi
+
   sshpass -p "$password" scp -o StrictHostKeyChecking=no "$0" "$root_user@$server_ip:$path_on_server"
   sshpass -p "$password" ssh -t "$root_user@$server_ip" "sudo ON_SERVER=1 HOST_PUB_KEY='$pub_key' bash $path_on_server/$(basename $0)"
   exit 0
