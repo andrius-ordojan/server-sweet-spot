@@ -5,14 +5,6 @@ display_ascii_art() {
   echo "$art"
 }
 
-center_text() {
-  local text="$1"
-  local width
-  width=$(tput cols) || return
-  local padding=$(((width - ${#text}) / 2))
-  printf "%${padding}s%s\n" '' "$text"
-}
-
 print_color() {
   case $1 in
   "green") echo -e "\e[32m$2\e[0m" ;;
@@ -55,18 +47,48 @@ show_progress() {
 #-------------
 # Main Script
 #-------------
-# TODO: make a cli for most of these
-username="root2"
-server_ip="4.182.25.11"
-# TODO: change to /tmp
-path_on_server="/home/root2"
-password="46AaCfGgKkMNnqsTtVvXxYy"
-host_pub_key=$(cat ~/.ssh/id_ed25519.pub)
+
+root_user="root"
+server_ip=""
+password=""
+pub_key=$(cat ~/.ssh/id_ed25519.pub)
 new_ssh_port="2954"
 
+path_on_server="/tmp"
+
+usage() {
+  echo "Usage: $0 -s server_ip -p password [options]"
+  echo ""
+  echo "Required arguments:"
+  echo "  -s  server_ip          IP address of the server"
+  echo "  -p  password           Password for SSH connection"
+  echo ""
+  echo "Optional arguments:"
+  echo "  -r  root_user          Root user (default: root)"
+  echo "  -k  pub_key            Public key (default: contents of ~/.ssh/id_ed25519.pub)"
+  echo "  -S  new_ssh_port       SSH port (default: 2954)"
+  exit 1
+}
+
+while getopts "r:s:p:k:S:" opt; do
+  case "$opt" in
+  r) root_user="$OPTARG" ;;
+  s) server_ip="$OPTARG" ;;
+  p) password="$OPTARG" ;;
+  k) pub_key="$OPTARG" ;;
+  S) new_ssh_port="$OPTARG" ;;
+  *) usage ;;
+  esac
+done
+
+if [[ -z "$server_ip" || -z "$password" ]]; then
+  echo "Error: server_ip and password are required."
+  usage
+fi
+
 if [[ ! "$ON_SERVER" ]]; then
-  sshpass -p "$password" scp -o StrictHostKeyChecking=no "$0" "$username@$server_ip:$path_on_server"
-  sshpass -p "$password" ssh -t "$username@$server_ip" "sudo ON_SERVER=1 HOST_PUB_KEY='$host_pub_key' bash $path_on_server/$(basename $0)"
+  sshpass -p "$password" scp -o StrictHostKeyChecking=no "$0" "$root_user@$server_ip:$path_on_server"
+  sshpass -p "$password" ssh -t "$root_user@$server_ip" "sudo ON_SERVER=1 HOST_PUB_KEY='$pub_key' bash $path_on_server/$(basename $0)"
   exit 0
 fi
 
@@ -85,9 +107,9 @@ clear
 echo
 display_ascii_art "$ascii_art"
 echo
-print_color "green" "Inspired by Enki, created by Andrius"
-print_color "green" "https://github.com/andrius-ordojan/server-sweet-spot"
-print_color "green" "This script will walk you through server configuration."
+echo "Inspired by Enki, created by Andrius"
+echo "https://github.com/andrius-ordojan/server-sweet-spot"
+echo "This script will walk you through server configuration."
 echo
 print_color "yellow" "Starting server setup on $(hostname) $(hostname -I)"
 echo
