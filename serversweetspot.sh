@@ -48,52 +48,51 @@ show_progress() {
 # Main Script
 #-------------
 
-root_user="root"
-server_ip=""
-password=""
-pub_key=$(cat ~/.ssh/id_ed25519.pub)
-new_ssh_port="2954"
-
-path_on_server="/tmp"
-
-usage() {
-  echo "Usage: $0 -s server_ip -p password [options]"
-  echo ""
-  echo "Required arguments:"
-  echo "  -s  server_ip          IP address of the server"
-  echo "  -p  password           Password for SSH connection"
-  echo ""
-  echo "Optional arguments:"
-  echo "  -r  root_user          Root user (default: root)"
-  echo "  -k  pub_key            Public key (default: contents of ~/.ssh/id_ed25519.pub)"
-  echo "  -S  new_ssh_port       SSH port (default: 2954)"
-  exit 1
-}
-
-while getopts "r:s:p:k:S:" opt; do
-  case "$opt" in
-  r) root_user="$OPTARG" ;;
-  s) server_ip="$OPTARG" ;;
-  p) password="$OPTARG" ;;
-  k) pub_key="$OPTARG" ;;
-  S) new_ssh_port="$OPTARG" ;;
-  *) usage ;;
-  esac
-done
-
-if [[ -z "$server_ip" || -z "$password" ]]; then
-  echo "Error: server_ip and password are required."
-  usage
-fi
-
 if [[ ! "$ON_SERVER" ]]; then
+  root_user="root"
+  server_ip=""
+  password=""
+  pub_key=$(cat ~/.ssh/id_ed25519.pub)
+  new_ssh_port="2954"
+  path_on_server="/tmp"
+
+  usage() {
+    echo "Usage: $0 -s server_ip -p password [options]"
+    echo ""
+    echo "Required arguments:"
+    echo "  -s  server_ip          IP address of the server"
+    echo "  -p  password           Password for SSH connection"
+    echo ""
+    echo "Optional arguments:"
+    echo "  -r  root_user          Root user (default: root)"
+    echo "  -k  pub_key            Public key (default: contents of ~/.ssh/id_ed25519.pub)"
+    echo "  -S  new_ssh_port       SSH port (default: 2954)"
+    exit 1
+  }
+
+  while getopts "r:s:p:k:S:" opt; do
+    case "$opt" in
+    r) root_user="$OPTARG" ;;
+    s) server_ip="$OPTARG" ;;
+    p) password="$OPTARG" ;;
+    k) pub_key="$OPTARG" ;;
+    S) new_ssh_port="$OPTARG" ;;
+    *) usage ;;
+    esac
+  done
+
+  if [[ -z "$server_ip" || -z "$password" ]]; then
+    echo "Error: server_ip and password are required."
+    usage
+  fi
+
   if ! command -v sshpass &>/dev/null; then
     echo "sshpass is not installed. It is a required dependency to automate password authentication over ssh. Install it and rerun the script."
     exit 1
   fi
 
   sshpass -p "$password" scp -o StrictHostKeyChecking=no "$0" "$root_user@$server_ip:$path_on_server"
-  sshpass -p "$password" ssh -t "$root_user@$server_ip" "sudo ON_SERVER=1 HOST_PUB_KEY='$pub_key' bash $path_on_server/$(basename $0)"
+  sshpass -p "$password" ssh -t "$root_user@$server_ip" "sudo ON_SERVER=1 HOST_PUB_KEY='$pub_key' NEW_SSH_PORT='$new_ssh_port' bash $path_on_server/$(basename $0)"
   exit 0
 fi
 
@@ -330,7 +329,7 @@ ignoreip = 127.0.0.1/8 ::1
 
 [sshd]
 enabled = true
-port    = $new_ssh_port
+port    = $NEW_SSH_PORT
 logpath = %(sshd_log)s
 backend = %(sshd_backend)s
 EOF
@@ -357,7 +356,7 @@ print_color "green" "Archived existing ssh configuration located in /etc/ssh/ssh
 
 custom_conf="/etc/ssh/sshd_config.d/50-custom.conf"
 sudo tee -a ${custom_conf} >/dev/null <<-EOF
-Port $new_ssh_port
+Port $NEW_SSH_PORT
 PermitRootLogin no
 PasswordAuthentication no
 PubkeyAuthentication yes
@@ -375,7 +374,7 @@ sudo chmod 600 ${custom_conf}
 sudo systemctl restart ssh
 
 print_color "yellow" "New SSH configuration:"
-print_color "yellow" "Port: $new_ssh_port"
+print_color "yellow" "Port: $NEW_SSH_PORT"
 print_color "yellow" "Root login disabled"
 print_color "yellow" "Password authentication disabled"
 print_color "yellow" "Only user $new_user is allowed to login"
@@ -387,9 +386,13 @@ echo
 print_color "yellow" "Configuring UFW..."
 ufw default deny incoming >/dev/null 2>&1
 ufw default allow outgoing >/dev/null 2>&1
-ufw allow ${new_ssh_port}/tcp comment 'SSH' >/dev/null 2>&1
+ufw allow ${NEW_SSH_PORT}/tcp comment 'SSH' >/dev/null 2>&1
 echo "y" | ufw enable >/dev/null 2>&1
 print_color "green" "UFW has been installed and configured"
-
+print_color "yellow" "new ufw rules:"
+print_color "yellow" "default deny incoming"
+print_color "yellow" "default allow outgoing"
+print_color "yellow" "allow $NEW_SSH_PORT"
 echo
+
 print_color "green" "Server setup complete!"
