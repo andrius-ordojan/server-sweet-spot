@@ -57,7 +57,7 @@ show_progress() {
 #-------------
 # TODO: make a cli for most of these
 username="root2"
-server_ip="4.182.25.217"
+server_ip="4.182.25.11"
 # TODO: change to /tmp
 path_on_server="/home/root2"
 password="46AaCfGgKkMNnqsTtVvXxYy"
@@ -185,6 +185,7 @@ else
 fi
 
 sudo useradd -m -s ${shell_path} -G sudo ${new_user}
+echo "andrius ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers >/dev/null
 print_color "green" "User $new_user has been created and added to sudo group"
 
 if [ $using_fish ]; then
@@ -218,7 +219,7 @@ EOL"
   print_color "green" "Configured fish"
 else
 
-  sudo -u ${new_user} bash -c "cat >/home/${new_user}/.bashrc <<EOL
+  sudo -u ${new_user} bash -c "cat >>/home/${new_user}/.bashrc <<EOL
 alias ls='ls -F'
 alias lsa='ls -aF'
 alias ll='ls -lh'
