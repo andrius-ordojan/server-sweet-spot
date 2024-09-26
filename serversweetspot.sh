@@ -57,14 +57,15 @@ show_progress() {
 #-------------
 # TODO: make a cli for most of these
 username="root2"
-server_ip="20.79.165.75"
+server_ip="4.182.25.217"
 # TODO: change to /tmp
 path_on_server="/home/root2"
 password="46AaCfGgKkMNnqsTtVvXxYy"
 host_pub_key=$(cat ~/.ssh/id_ed25519.pub)
+new_ssh_port="2954"
 
 if [[ ! "$ON_SERVER" ]]; then
-  sshpass -p "$password" scp "$0" "$username@$server_ip:$path_on_server"
+  sshpass -p "$password" scp -o StrictHostKeyChecking=no "$0" "$username@$server_ip:$path_on_server"
   sshpass -p "$password" ssh -t "$username@$server_ip" "sudo ON_SERVER=1 HOST_PUB_KEY='$host_pub_key' bash $path_on_server/$(basename $0)"
   exit 0
 fi
@@ -82,16 +83,15 @@ EOF
 
 clear
 echo
-# TODO: center this at some point
 display_ascii_art "$ascii_art"
 echo
-center_text "Inspired by Enki, created by Andrius"
-center_text "https://github.com/andrius-ordojan/server-sweet-spot"
-center_text "This script will walk you through some basic server setup and configuration."
+print_color "green" "Inspired by Enki, created by Andrius"
+print_color "green" "https://github.com/andrius-ordojan/server-sweet-spot"
+print_color "green" "This script will walk you through server configuration."
 echo
-print_color "green" "Starting server setup on $(hostname) $(hostname -I)..."
-# TODO: change 5 later
-sleep 1
+print_color "yellow" "Starting server setup on $(hostname) $(hostname -I)"
+echo
+sleep 5
 
 if [[ $EUID -ne 0 ]]; then
   print_color "red" "This script must be run as root"
@@ -111,6 +111,7 @@ update_status=$?
 
 if [ $update_status -eq 0 ]; then
   print_color "green" "Update completed successfully."
+  echo
 else
   print_color "red" "Failed to update package lists. Here's the detailed error:"
   cat /tmp/apt_update.log
@@ -127,6 +128,7 @@ upgrade_status=$?
 
 if [ $upgrade_status -eq 0 ]; then
   print_color "green" "Upgrade completed successfully."
+  echo
 else
   print_color "red" "Failed to upgrade packages. Here's the detailed error:"
   cat /tmp/apt_upgrade.log
@@ -142,6 +144,7 @@ print_color "yellow" "Installing essential packages: ${essential_packages[*]}"
 (apt install -y "${essential_packages[@]}" >/dev/null 2>&1) &
 show_progress $!
 print_color "green" "Essential packages installed."
+echo
 
 if prompt_yes_no "Do you want to install optional packages? [fish, fzf, zip, bat, ncdu, btop, ripgrep, fd-find, sd, eza, tldr]"; then
   install_optional=1
@@ -164,8 +167,6 @@ if prompt_yes_no "Do you want to install optional packages? [fish, fzf, zip, bat
     mv eza /usr/local/bin/eza
   fi
 fi
-
-print_color "green" "Finshed installing packages"
 echo
 
 #----------------------
@@ -238,6 +239,9 @@ EOL"
   print_color "green" "Configured .bashrc"
 fi
 
+sudo -u ${new_user} wget -q https://raw.githubusercontent.com/amix/vimrc/refs/heads/master/vimrcs/basic.vim -O /home/${new_user}/.vimrc
+print_color "green" "Configured vim"
+
 if prompt_yes_no "Add public key to authorized_keys for ${new_user}?"; then
   read -r -p "Provide public key to add (by default it will try to use ~/.ssh/id_ed25519.pub):" input
 
@@ -250,10 +254,10 @@ if prompt_yes_no "Add public key to authorized_keys for ${new_user}?"; then
   sudo -u ${new_user} mkdir -p /home/${new_user}/.ssh
   sudo -u ${new_user} bash -c "echo $HOST_PUB_KEY > /home/${new_user}/.ssh/authorized_keys"
   sudo -u ${new_user} bash -c "chmod 600 /home/${new_user}/.ssh/authorized_keys"
+
+  print_color "green" "public key added to /home/${new_user}/.ssh/authorized_keys"
 fi
 
-sudo -u ${new_user} wget -q https://raw.githubusercontent.com/amix/vimrc/refs/heads/master/vimrcs/basic.vim -O /home/${new_user}/.vimrc
-print_color "green" "Configured vim"
 print_color "green" "User $new_user has been created and configured"
 echo
 
@@ -298,7 +302,7 @@ ignoreip = 127.0.0.1/8 ::1
 
 [sshd]
 enabled = true
-port    = 2954
+port    = $new_ssh_port
 logpath = %(sshd_log)s
 backend = %(sshd_backend)s
 EOF
@@ -325,7 +329,7 @@ print_color "green" "Archived existing ssh configuration located in /etc/ssh/ssh
 
 custom_conf="/etc/ssh/sshd_config.d/50-custom.conf"
 sudo tee -a ${custom_conf} >/dev/null <<-EOF
-Port 2954
+Port $new_ssh_port
 PermitRootLogin no
 PasswordAuthentication no
 PubkeyAuthentication yes
@@ -343,7 +347,7 @@ sudo chmod 600 ${custom_conf}
 sudo systemctl restart ssh
 
 print_color "yellow" "New SSH configuration:"
-print_color "yellow" "Port: 2954"
+print_color "yellow" "Port: $new_ssh_port"
 print_color "yellow" "Root login disabled"
 print_color "yellow" "Password authentication disabled"
 print_color "yellow" "Only user $new_user is allowed to login"
@@ -355,7 +359,7 @@ echo
 print_color "yellow" "Configuring UFW..."
 ufw default deny incoming >/dev/null 2>&1
 ufw default allow outgoing >/dev/null 2>&1
-ufw allow 2954/tcp comment 'SSH' >/dev/null 2>&1
+ufw allow ${new_ssh_port}/tcp comment 'SSH' >/dev/null 2>&1
 echo "y" | ufw enable >/dev/null 2>&1
 print_color "green" "UFW has been installed and configured"
 
