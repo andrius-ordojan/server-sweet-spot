@@ -28,7 +28,7 @@ To install the script and make it available for use:
 
 1. Download the script from GitHub using `wget` or `curl` and place it in `~/.local/bin/` folder:
 
-**wget**
+**using wget**
 ``` bash
 wget https://raw.githubusercontent.com/andrius-ordojan/server-sweet-spot/refs/heads/main/serversweetspot.sh -O ~/.local/bin/serversweetspot
 ```
