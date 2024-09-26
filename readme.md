@@ -22,28 +22,6 @@ The configuration steps are:
 - Configure SSH, disabling password authentication and only allowing the new user to log in using a public key.
 - Configure the firewall (UFW) by denying all ingress except for the SSH port.
 
-## Usage
-
-To use the script, execute it with the required parameters. The script can be run with the following syntax:
-
-```bash
-serversweetspot -s server_ip -p password [options]
-```
-
-### Required arguments:
-- `-s server_ip`: IP address of the server to configure.
-- `-p password`: Password for the SSH connection.
-
-### Optional arguments:
-- `-r root_user`: Specify the root user (default: `root`).
-- `-k pub_key`: Provide the public key (default: contents of `~/.ssh/id_ed25519.pub`).
-- `-S new_ssh_port`: Specify the SSH port (default: `2954`).
-
-### Example:
-```bash
-serversweetspot -s 192.168.1.1 -p "your_password" 
-```
-
 ## Installation
 
 To install the script and make it available for use:
@@ -75,5 +53,26 @@ sudo apt install sshpass
 On Mac, use Homebrew:
 ``` bash
 brew install sshpass
+
+```
+## Usage
+
+To use the script, execute it with the required parameters. The script can be run with the following syntax:
+
+```bash
+serversweetspot -s server_ip -p password [options]
 ```
 
+### Required arguments:
+- `-s server_ip`: IP address of the server to configure.
+- `-p password`: Password for the SSH connection.
+
+### Optional arguments:
+- `-r root_user`: Specify the root user (default: `root`).
+- `-k pub_key`: Provide the public key (default: contents of `~/.ssh/id_ed25519.pub`).
+- `-S new_ssh_port`: Specify the SSH port (default: `2954`).
+
+### Example:
+```bash
+serversweetspot -s 192.168.1.1 -p "your_password" 
+```
