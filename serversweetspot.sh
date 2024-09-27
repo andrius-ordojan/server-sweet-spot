@@ -218,7 +218,7 @@ if [ $using_fish ]; then
   sudo -u ${new_user} mkdir -p /home/${new_user}/.config/fish/conf.d
 
   sudo -u ${new_user} bash -c "cat >/home/${new_user}/.config/fish/conf.d/alias.fish <<EOL
-alias ls='eza -lh --group-directories-first --icons'
+alias ls='eza -lh --group-directories-first --icons --group'
 alias lsa='ls -a'
 alias lt='eza --tree --level=2 --long --icons --git'
 alias lta='lt -a'
