@@ -211,7 +211,7 @@ else
 fi
 
 sudo useradd -m -s ${shell_path} -G sudo ${new_user}
-echo "andrius ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers >/dev/null
+echo "${new_user} ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers >/dev/null
 print_color "green" "User $new_user has been created and added to sudo group"
 
 if [ $using_fish ]; then
