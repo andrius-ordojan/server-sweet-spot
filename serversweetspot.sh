@@ -199,7 +199,7 @@ echo
 # Set up non-root user
 #----------------------
 read -r -p "Enter username of the new non-root user: " new_user
-
+read -r -p "Enter password: " password
 if command -v fish 2 >&1 >/dev/null; then
   if prompt_yes_no "Fish shell is installed. Do you want to set it as default for the user ${new_user}"; then
     using_fish=1
@@ -211,7 +211,7 @@ else
 fi
 
 sudo useradd -m -s ${shell_path} -G sudo ${new_user}
-echo "${new_user} ALL=(ALL) NOPASSWD:ALL" | sudo tee -a /etc/sudoers >/dev/null
+sudo usermod --password $(echo "${password}" | openssl passwd -1 -stdin) ${new_user}
 print_color "green" "User $new_user has been created and added to sudo group"
 
 if [ $using_fish ]; then
