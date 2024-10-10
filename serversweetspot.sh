@@ -199,7 +199,8 @@ echo
 # Set up non-root user
 #----------------------
 read -r -p "Enter username of the new non-root user: " new_user
-read -r -p "Enter password: " password
+read -r -p -s "Enter password: " password
+echo
 if command -v fish 2 >&1 >/dev/null; then
   if prompt_yes_no "Fish shell is installed. Do you want to set it as default for the user ${new_user}"; then
     using_fish=1
