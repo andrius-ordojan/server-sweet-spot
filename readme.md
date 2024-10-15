@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This script is designed to automate the initial setup and configuration of a server. It has been tested on Debian but should work on Ubuntu as well.
+This script is designed to automate the initial setup and configuration of a server. It is made to run on Debian, but should work on Ubuntu with some slight tweaks.
 
 ### How It Works
 
